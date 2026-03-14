@@ -4,34 +4,42 @@ import android.os.Bundle;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
-import android.widget.TextView;
-
 import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
-import androidx.lifecycle.ViewModelProvider;
-
 import com.example.neighbourly.databinding.FragmentNotificationsBinding;
+import com.google.firebase.firestore.FirebaseFirestore;
+import com.google.firebase.firestore.Query;
 
 public class NotificationsFragment extends Fragment {
-
     private FragmentNotificationsBinding binding;
 
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container, Bundle savedInstanceState) {
-        NotificationsViewModel notificationsViewModel =
-                new ViewModelProvider(this).get(NotificationsViewModel.class);
-
+    public View onCreateView(@NonNull LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
         binding = FragmentNotificationsBinding.inflate(inflater, container, false);
-        View root = binding.getRoot();
 
-        final TextView textView = binding.textNotifications;
-        notificationsViewModel.getText().observe(getViewLifecycleOwner(), textView::setText);
-        return root;
+        loadLeaderboard();
+
+        binding.btnCreateRoom.setOnClickListener(v -> {
+            // Logic to open a Dialog and create a Firestore Room
+        });
+
+        return binding.getRoot();
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        binding = null;
+    private void loadLeaderboard() {
+        FirebaseFirestore.getInstance().collection("users")
+                .orderBy("currentSteps", Query.Direction.DESCENDING)
+                .limit(10)
+                .addSnapshotListener((value, error) -> {
+                    if (value != null) {
+                        StringBuilder sb = new StringBuilder("--- LEADERBOARD ---\n");
+                        for (com.google.firebase.firestore.DocumentSnapshot doc : value.getDocuments()) {
+                            sb.append(doc.getString("displayName"))
+                                    .append(": ")
+                                    .append(doc.getLong("currentSteps"))
+                                    .append(" steps\n");
+                        }
+                        binding.textLeaderboard.setText(sb.toString());
+                    }
+                });
     }
 }
